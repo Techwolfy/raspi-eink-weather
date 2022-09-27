@@ -8,7 +8,7 @@ import json
 import time
 import requests
 from PIL import Image, ImageDraw, ImageFont
-from waveshare_epd.lib.waveshare_epd import epd2in13_V2
+import epd2in13_V2
 
 
 LOCATION_TEXT = "Seattle, WA"
