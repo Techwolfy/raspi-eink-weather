@@ -174,7 +174,6 @@ class WeatherGraphics:
 
 #Initialize display
 display = epd2in13_V2.EPD()
-#TODO: Can't reinit after sleep due to bug in Waveshare driver, fix it...
 
 def clearDisplay():
     display.init(display.FULL_UPDATE)
