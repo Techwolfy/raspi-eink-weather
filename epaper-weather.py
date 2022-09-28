@@ -73,20 +73,18 @@ class WeatherGraphics:
 
     def updateWeather(self, forecast):
         weather = forecast["properties"]["periods"][0]
+        print(weather)
 
-        iconId = weather["icon"].split('?', 1)[0].rsplit('/', 2)
+        iconId = weather["icon"].split('?', 1)[0].split(',', 1)[0].rsplit('/', 2)
         self._weatherIcon = ICON_MAP[iconId[2]][0 if iconId[1] == "day" else 1]
 
         main = weather["shortForecast"]
-        print(main)
         self._mainText = main
 
         temperature = "%d °%s" % (weather["temperature"], weather["temperatureUnit"])
-        print(temperature)
         self._temperature = temperature
 
         description = weather["detailedForecast"].split('.', 1)[0] + "."
-        print(description)
         self._description = description
 
         self.updateTime()
