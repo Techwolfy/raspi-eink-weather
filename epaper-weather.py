@@ -93,6 +93,7 @@ class WeatherGraphics:
         self._mainText = None
         self._temperature = None
         self._description = None
+        self._nextRain = None
         self._timeText = None
 
     def updateWeather(self, forecast):
@@ -129,6 +130,16 @@ class WeatherGraphics:
             description = weather["description"]
             description = description[0].upper() + description[1:]
             self._description = description
+
+            if 'rain' in weather["main"].lower():
+                self._nextRain = "Raining"
+            else:
+                rainData = [x["dt"] for x in forecast["hourly"] if "rain" in x["weather"][0]["main"].lower()]
+                if len(rainData) > 0:
+                    upcomingRain = (datetime.datetime.fromtimestamp(min(rainData)) - datetime.datetime.now())
+                    self._nextRain = "Rain in " + str(int(upcomingRain.seconds / 60)) + "m"
+                else:
+                    self._nextRain = "No rain"
 
         self.updateTime()
 
@@ -202,6 +213,16 @@ class WeatherGraphics:
             font=FONT_LARGE,
             fill=0x00,
         )
+
+        # Draw the next rain text
+        if not self._noaa:
+            (fontWidth, fontHeight) = FONT_SMALL.getsize(self._nextRain)
+            draw.text(
+                (displayWidth - fontWidth - 5, displayHeight - fontHeight - 5),
+                self._nextRain,
+                font=FONT_SMALL,
+                fill=0x00,
+            )
 
         self._image = image
 
