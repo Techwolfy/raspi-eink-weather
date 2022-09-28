@@ -167,7 +167,6 @@ class WeatherGraphics:
         self.updateImage()
 
         self._display.init(display.FULL_UPDATE)
-        self._display.Clear(0xff)
         self._display.display(self._display.getbuffer(self._image))
         self._display.sleep()
 
