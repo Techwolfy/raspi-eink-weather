@@ -59,6 +59,9 @@ class RaspberryPi:
     def spi_writebyte(self, data):
         self.SPI.writebytes(data)
 
+    def spi_readbytes(self, length):
+        return self.SPI.readbytes(length)
+
     def module_init(self):
         self.GPIO.setmode(self.GPIO.BCM)
         self.GPIO.setwarnings(False)
@@ -68,8 +71,9 @@ class RaspberryPi:
         self.GPIO.setup(self.BUSY_PIN, self.GPIO.IN)
         # SPI device, bus = 0, device = 0
         self.SPI.open(0, 0)
-        self.SPI.max_speed_hz = 4000000
+        self.SPI.max_speed_hz = 1000000
         self.SPI.mode = 0b00
+        self.SPI.threewire = True
         return 0
 
     def module_exit(self):

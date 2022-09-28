@@ -103,7 +103,14 @@ class EPD:
         epdconfig.digital_write(self.cs_pin, 0)
         epdconfig.spi_writebyte([data])
         epdconfig.digital_write(self.cs_pin, 1)
-        
+
+    def recv_data(self, length):
+        epdconfig.digital_write(self.dc_pin, 1)
+        epdconfig.digital_write(self.cs_pin, 0)
+        data = epdconfig.spi_readbytes(length)
+        epdconfig.digital_write(self.cs_pin, 1)
+        return data
+
     def ReadBusy(self):
         while(epdconfig.digital_read(self.busy_pin) == 1):      # 0: idle, 1: busy
             epdconfig.delay_ms(100)    
@@ -176,6 +183,9 @@ class EPD:
             for count in range(70):
                 self.send_data(self.lut_full_update[count])
 
+            self.send_command(0x18)
+            self.send_data(0x80)
+
             self.send_command(0x4E)   # set RAM x address count to 0
             self.send_data(0x00)
             self.send_command(0x4F)   # set RAM y address count to 0X127
@@ -209,6 +219,15 @@ class EPD:
             self.send_command(0x3C) #BorderWavefrom
             self.send_data(0x01)
         return 0
+
+    def gettemp(self, celsius=True):
+        self.send_command(0x1b)
+        temp_bytes = self.recv_data(2)
+        temp_c = ((temp_bytes[0] << 4) + (temp_bytes[1] >> 4)) / 16
+        if celsius:
+            return temp_c
+        else:
+            return (temp_c * 9 / 5) + 32
 
     def getbuffer(self, image):
         if self.width%8 == 0:
