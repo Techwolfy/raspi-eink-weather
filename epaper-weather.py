@@ -12,9 +12,11 @@ import epd2in13_V2
 
 
 LOCATION_TEXT = "Seattle, WA"
-LOCATION_LATLON = "47.6597,-122.3191"
-LOCATION_URL = "https://api.weather.gov/points/%s" % LOCATION_LATLON
+LOCATION_LATLON = ("47.6597", "-122.3191")
+LOCATION_URL = "https://api.weather.gov/points/%s,%s" % (LOCATION_LATLON[0], LOCATION_LATLON[1])
 FORECAST_URL = "https://api.weather.gov/gridpoints/%s/%s,%s/forecast"
+FORECAST_URL_ALT = "https://openweathermap.org/data/2.5/onecall?appid=439d4b804bc8187953eb36d2a8c26a02&units=imperial&lat=%s&lon=%s" % (LOCATION_LATLON[0], LOCATION_LATLON[1])
+USE_NOAA = False
 
 FONT_SMALL = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 16)
 FONT_MEDIUM = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 20)
@@ -58,10 +60,32 @@ ICON_MAP = {
     "fog": "JK",              #Fog/mist
 }
 
+ICON_MAP_ALT = {
+    "01d": "B",
+    "01n": "C",
+    "02d": "H",
+    "02n": "I",
+    "03d": "N",
+    "03n": "N",
+    "04d": "Y",
+    "04n": "Y",
+    "09d": "Q",
+    "09n": "Q",
+    "10d": "R",
+    "10n": "R",
+    "11d": "Z",
+    "11n": "Z",
+    "13d": "W",
+    "13n": "W",
+    "50d": "J",
+    "50n": "K",
+}
+
 
 class WeatherGraphics:
-    def __init__(self, display, locationText):
+    def __init__(self, display, locationText, noaa=True):
         self._display = display
+        self._noaa = noaa
         self._image = None
 
         self._weatherIcon = None
@@ -72,20 +96,39 @@ class WeatherGraphics:
         self._timeText = None
 
     def updateWeather(self, forecast):
-        weather = forecast["properties"]["periods"][0]
-        print(weather)
+        if self._noaa:
+            weather = forecast["properties"]["periods"][0]
+            print(weather)
 
-        iconId = weather["icon"].split('?', 1)[0].split(',', 1)[0].rsplit('/', 2)
-        self._weatherIcon = ICON_MAP[iconId[2]][0 if iconId[1] == "day" else 1]
+            iconId = weather["icon"].split('?', 1)[0].split(',', 1)[0].rsplit('/', 2)
+            self._weatherIcon = ICON_MAP[iconId[2]][0 if iconId[1] == "day" else 1]
 
-        main = weather["shortForecast"]
-        self._mainText = main
+            main = weather["shortForecast"]
+            self._mainText = main
 
-        temperature = "%d °%s" % (weather["temperature"], weather["temperatureUnit"])
-        self._temperature = temperature
+            temperature = "%d °%s" % (weather["temperature"], weather["temperatureUnit"])
+            self._temperature = temperature
 
-        description = weather["detailedForecast"].split('.', 1)[0] + "."
-        self._description = description
+            description = weather["detailedForecast"].split('.', 1)[0] + "."
+            self._description = description
+
+        else:
+            weather = forecast["current"]["weather"][0]
+            print(weather)
+
+            # set the icon/background
+            self._weatherIcon = ICON_MAP_ALT[weather["icon"]]
+
+            main = weather["main"]
+            self._mainText = main
+
+            temperature = forecast["current"]["temp"]
+            print(temperature)
+            self._temperature = "%d °F" % temperature
+
+            description = weather["description"]
+            description = description[0].upper() + description[1:]
+            self._description = description
 
         self.updateTime()
 
@@ -132,27 +175,28 @@ class WeatherGraphics:
         # Draw the main text
         (fontWidth, fontHeight) = FONT_LARGE.getsize(self._mainText)
         draw.text(
-            (5, displayHeight - fontHeight - 5), #(5, displayHeight - fontHeight * 2),
+            (5, displayHeight - fontHeight - 5) if self._noaa else (5, displayHeight - fontHeight * 2),
             self._mainText,
             font=FONT_LARGE,
             fill=0x00,
         )
 
         # Draw the description text
-        #(fontWidth, fontHeight) = FONT_SMALL.getsize(self._description)
-        #draw.text(
-        #    (5, displayHeight - fontHeight - 5),
-        #    self._description,
-        #    font=FONT_SMALL,
-        #    fill=0x00,
-        #)
+        if not self._noaa:
+            (fontWidth, fontHeight) = FONT_SMALL.getsize(self._description)
+            draw.text(
+                (5, displayHeight - fontHeight - 5),
+                self._description,
+                font=FONT_SMALL,
+                fill=0x00,
+            )
 
         # Draw the temperature
         (fontWidth, fontHeight) = FONT_LARGE.getsize(self._temperature)
         draw.text(
             (
                 displayWidth - fontWidth - 5,
-                5 #displayHeight - fontHeight * 2
+                5 if self._noaa else displayHeight - fontHeight * 2
             ),
             self._temperature,
             font=FONT_LARGE,
@@ -181,16 +225,17 @@ atexit.register(clearDisplay)
 
 
 #Query gridpoint
-gridpointData = requests.get(LOCATION_URL)
-if gridpointData.status_code != 200:
-    print("Gridpoint query failed: %d", gridpointData.status_code)
-    exit(1)
+if USE_NOAA:
+    gridpointData = requests.get(LOCATION_URL)
+    if gridpointData.status_code != 200:
+        print("Gridpoint query failed: %d", gridpointData.status_code)
+        exit(1)
 
-gridpoint = gridpointData.json()
+    gridpoint = gridpointData.json()
 
 
 #Display weather
-displayGFX = WeatherGraphics(display, LOCATION_TEXT)
+displayGFX = WeatherGraphics(display, LOCATION_TEXT, USE_NOAA)
 displayRefresh = 0
 
 while True:
@@ -200,7 +245,11 @@ while True:
         continue
 
     #Query weather and update display
-    forecastUrl = FORECAST_URL % (gridpoint["properties"]["gridId"], gridpoint["properties"]["gridX"], gridpoint["properties"]["gridY"])
+    if USE_NOAA:
+        forecastUrl = FORECAST_URL % (gridpoint["properties"]["gridId"], gridpoint["properties"]["gridX"], gridpoint["properties"]["gridY"])
+    else:
+        forecastUrl = FORECAST_URL_ALT
+
     forecast = requests.get(forecastUrl)
     if forecast.status_code == 200:
         displayGFX.updateWeather(forecast.json())
