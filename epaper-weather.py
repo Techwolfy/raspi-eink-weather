@@ -137,7 +137,11 @@ class WeatherGraphics:
                 rainData = [x["dt"] for x in forecast["hourly"] if "rain" in x["weather"][0]["main"].lower()]
                 if len(rainData) > 0:
                     upcomingRain = (datetime.datetime.fromtimestamp(min(rainData)) - datetime.datetime.now())
-                    self._nextRain = "Rain in " + str(int(upcomingRain.seconds / 60)) + "m"
+                    nextRain = int(upcomingRain.seconds / 60)
+                    if nextRain > 60:
+                        self._nextRain = "Rain in " + str(int(nextRain / 60)) + "h" + str(nextRain % 60) + "m"
+                    else:
+                        self._nextRain = "Rain in " + str(nextRain) + "m"
                 else:
                     self._nextRain = "No rain"
 
