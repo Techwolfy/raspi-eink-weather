@@ -1,6 +1,11 @@
 #!/usr/bin/python3
-#Raspberry Pi Zero e-ink weather display using NOAA API
-#Inspired by https://learn.adafruit.com/raspberry-pi-e-ink-weather-station-using-python
+# Raspberry Pi Zero e-ink weather display using NOAA API
+# Inspired by https://learn.adafruit.com/raspberry-pi-e-ink-weather-station-using-python
+#
+# Copyright 2020 Melissa LeBlanc-Williams for Adafruit Industries
+# Copyright 2022 Daniel Ring
+#
+# SPDX-License-Identifier: MIT
 
 import atexit
 import datetime
